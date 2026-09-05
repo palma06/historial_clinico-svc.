@@ -8,6 +8,14 @@ Microservicio correspondiente al **caso caso07 — MediCare** (Telemedicina) de 
 | Calidad | JaCoCo cobertura LINE 100% · Cucumber (BDD) alineado a endpoints REST |
 | Entrega | Docker / Docker Compose |
 
+## Modelo de ramificación
+Modelo elegido: GitFlow
+Para este proyecto elegimos utilizar el modelo de ramificacion GitFlow, ya que permite separar el codigo estable del codigo que se encuentra en desarrollo.
+
+Utilizaremos la rama main para mantener el código estable del proyecto y la rama develop como rama de integración, donde se incorporarán las funcionalidades desarrolladas por los integrantes del equipo.
+
+Las nuevas funcionalidades serán desarrolladas mediante ramas feature/<nombre> y posteriormente integradas a develop mediante Pull Requests. En caso de detectar un error critico en la version estable, utilizaremos ramas hotfix/<nombre> para realizar la corrección y posteriormente integrarla a main.
+
 ## Responsabilidad (SRP)
 
 administra los datos y la lógica del dominio de Historial Clínico del caso caso07 (MediCare). Su base de datos es una **H2 en memoria** (un solo microservicio por base), cumpliendo aislamiento de datos por dominio.
