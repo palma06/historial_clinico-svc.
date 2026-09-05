@@ -1,0 +1,8 @@
+services:
+  historial-clinico-svc:
+    build: .
+    image: duoc/caso07-historial-clinico:1.0.0
+    container_name: caso07-historial-clinico-svc
+    ports:
+      - "${PORT:-8080}:8080"
+    restart: unless-stopped
