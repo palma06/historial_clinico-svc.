@@ -108,3 +108,27 @@ Las ramas temporales deben nombrarse en minúsculas y con palabras separadas por
 ```bash
    mvn test
    mvn verify
+```
+
+
+### Reflexión Individual
+
+Durante el desarrollo de esta evaluación comprendí en la practica lo importante de adoptar una metodología formal como GitFlow en lugar de recurrir al clásico push directo a una rama compartida. Separar el código estable en main y la integración continua en develop cambia por completo la forma de trabajar, ya que obliga a pensar cada cambio como una unidad aislada mediante ramas feature/ y mantener main como un reflejo intacto de producción. 
+
+### Declaración IA
+
+Herramienta: Gemini (Google)
+Ámbitos y casos de uso asistido: 
+- **Soporte de comandos en terminal:** asistencia en resolución de incidencias locales de git.
+- **Formato de documentación:** estructuración visual de tablas comparativas.
+
+### Trazabilidad del código y flujo git (IE2/IE5):
+
+| Hito | Rama destino | Mensaje Commit | Hito |
+|---|---|---|---|
+| `feature 1` | develop | feat(ui): agregar pie de pagina con version del servicio | `PR revisado y fusionado a develop` |
+| `feature 2` | develop | docs: agregar changelog del microservicio historial-clinico  | `PR revisado y fusionado a develop` |
+| `hotfix` | main | fix(ui): corregir título de la página principal | `PR revisado y fusionaod a main` |
+| `sync hotfix` | develop | merge branch ´main´ into develop | `merge en local para propagar parche a integracion` |
+| `cierre ep01` | main | release: integrar cambios de develop a main | `PR final con github actions en verde` |
+
