@@ -62,3 +62,41 @@ docker compose up --build
 mvn test      # unit tests + Cucumber
 mvn verify    # + verificación de cobertura JaCoCo (100% LINE, falla si baja)
 ```
+## Convenciones y Buenas Prácticas de Desarrollo (IE5)
+
+Guía de estándares adoptada para el ciclo de vida del microservicio `historial-clinico-svc` bajo la metodología GitFlow.
+
+### 1. Convención de Commits (Conventional Commits)
+
+Los mensajes se estructuran bajo el formato: `tipo(alcance): descripcion-corta` (en minúsculas, modo imperativo y sin tildes).
+
+| Tipo | Propósito | Ejemplo |
+|---|---|---|
+| `feat` | Nueva funcionalidad en el sistema | `feat(ui): agregar pie de pagina con version` |
+| `fix` | Corrección de un defecto o bug | `fix(ui): corregir titulo de la pagina principal` |
+| `docs` | Cambios exclusivos en documentación | `docs: agregar changelog del microservicio historial-clinico` |
+| `chore` | Configuración, dependencias o tareas de CI/CD | `chore(ci): agregar pipeline de compilacion` |
+| `test` | Incorporación o ajuste de pruebas unitarias/BDD | `test(api): agregar escenario cucumber para expedientes` |
+
+### 2. Naming de Ramas
+
+Las ramas temporales deben nombrarse en minúsculas y con palabras separadas por guiones medios:
+
+- **Features:** `feature/<descripcion-corta>` (ejemplo: `feature/pagina-presentacion`, `feature/changelog`). Origen: `develop`.
+- **Hotfixes:** `hotfix/<descripcion-corta>` (ejemplo: `hotfix/titulo-pagina`). Origen: `main`.
+
+### 3. Flujo de Merge y Políticas de Integración
+
+- **Prohibido push directo:** No se permite realizar commits o pushes directos a las ramas `main` ni `develop`. Toda integración debe canalizarse exclusivamente a través de un **Pull Request (PR)**.
+- **Aprobación mínima:** Cada PR requiere obligatoriamente al menos **1 aprobación** del compañero de equipo antes de habilitar la fusión.
+- **Estrategia de fusión:** Se utiliza *Merge commit* o *Squash and merge* según la granularidad del cambio.
+- **Limpieza:** La rama de trabajo debe eliminarse inmediatamente tras completarse la fusión (`Delete branch`).
+
+### 4. Estrategia de Revisión de Código (Code Review)
+
+1. **Apertura:** El autor del PR asigna al compañero como revisor formal en GitHub.
+2. **Revisión activa:** El revisor inspecciona la pestaña *Files changed*, comenta observaciones si corresponde y solo ejecuta la aprobación (*Approve*) si el cambio cumple los estándares de calidad.
+3. **Validación previa:** Antes de solicitar revisión o fusionar, el autor debe garantizar en local la ejecución exitosa de pruebas y cobertura:
+```bash
+   mvn test
+   mvn verify
