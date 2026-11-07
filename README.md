@@ -130,4 +130,14 @@ flowchart LR
 
 ### Declaración de uso de IA
 
-Se utilizó OpenAI Codex para preparar la configuración del pipeline y redactar su documentación operativa. El equipo debe revisar y validar la implementación y redactar sus decisiones técnicas y reflexiones individuales.
+Se utilizó OpenAI Codex para apoyo de consultas.
+
+### Reflexion personal
+La EP2 me permitió entender cómo se conectan las pruebas automatizadas, la construcción de una imagen Docker y el despliegue de un microservicio dentro de un pipeline. En GitHub Actions, Docker Compose levantó la imagen generada para la ejecución y comprobó que la API respondiera antes de apagar el entorno. Los registros y artefactos dejaron evidencia de qué versión se probó y qué ocurrió durante el despliegue.
+
+También entendí que un servicio puede responder correctamente y aun así tener vulnerabilidades en sus dependencias. En este caso, la simulación pasó y Snyk detectó hallazgos que mantienen bloqueada la promoción desde main. Esa diferencia me ayudó a ver el valor de automatizar ambas comprobaciones: cada una responde a una pregunta distinta antes de publicar un cambio.
+
+### Ver evidencia del despliegue simulado
+
+https://github.com/palma06/historial_clinico-svc./actions/runs/42339042159/job/128302736990
+
