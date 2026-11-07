@@ -100,3 +100,32 @@ Las ramas temporales deben nombrarse en minúsculas y con palabras separadas por
 ```bash
    mvn test
    mvn verify
+```
+
+## EP2 · Integración y entrega continua
+
+```mermaid
+flowchart LR
+  PR["PR o push a develop/main"] --> T["JUnit, Cucumber y JaCoCo"]
+  PR --> S["Snyk Code y dependencias"]
+  T --> I["Construcción Docker"]
+  I --> D["Compose en push a main"]
+  S --> D
+  D --> H["Healthcheck y GET /api/expedientes"]
+```
+
+- **IE1 · Imagen.** El Dockerfile separa la compilación Maven del runtime Java 21. El contenedor ejecuta el JAR con UID/GID 10001. El pipeline registra el identificador y tamaño de la imagen.
+- **IE2 · Calidad.** `mvn -B verify` ejecuta las pruebas existentes y aplica la política JaCoCo de 100 % de cobertura de líneas configurada en el POM. Actions conserva los informes Surefire y JaCoCo.
+- **IE3 · Seguridad.** Dependabot revisa actualizaciones de Maven y Actions semanalmente. Habilitar también Dependabot alerts en *Settings → Advanced Security*. Snyk Code y Snyk Open Source bloquean el despliegue si detectan hallazgos de severidad alta o crítica, si el análisis falla o si falta su credencial.
+- **IE4 · Despliegue.** Un push a `main` carga en otro job la imagen construida para el mismo SHA, verifica su etiqueta OCI y la arranca con Compose sin recompilar. El artefacto de despliegue incluye SHA, ID de la imagen, ejecución, registros y respuesta HTTP. El entorno simulado se apaga al finalizar.
+- **IE5 · Orquestación.** Compose publica solo en localhost y aplica reinicio, healthcheck HTTP, límite de 1 CPU y 512 MiB, descarte de capacidades y bloqueo de elevación de privilegios. El entorno simulado deshabilita la consola H2. La configuración mantiene una instancia. Cada réplica tendría datos H2 independientes. Para escalar con datos compartidos, el equipo debe definir una base externa y una estrategia de acceso.
+
+### Configuración de GitHub
+
+1. Activar Snyk Code en la organización Snyk y agregar `SNYK_TOKEN` en *Settings → Secrets and variables → Actions*. Si se validan PR de Dependabot, agregar el mismo nombre en los secretos de Dependabot. Los PR externos sin acceso al secreto necesitan validación desde una rama interna revisada.
+2. Integrar por PR conforme a GitFlow y exigir las comprobaciones de pruebas, seguridad e imagen al fusionar. El workflow declara solo permisos de lectura.
+3. Tras integrar a `main`, abrir *Actions → EP2 CI/CD* y revisar el resultado de los cuatro jobs y los artefactos de evidencia.
+
+### Declaración de uso de IA
+
+Se utilizó OpenAI Codex para preparar la configuración del pipeline y redactar su documentación operativa. El equipo debe revisar y validar la implementación y redactar sus decisiones técnicas y reflexiones individuales.

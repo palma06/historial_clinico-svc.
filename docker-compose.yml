@@ -1,8 +1,21 @@
 services:
   historial-clinico-svc:
     build: .
-    image: duoc/caso07-historial-clinico:1.0.0
-    container_name: caso07-historial-clinico-svc
+    image: ${APP_IMAGE:-duoc/caso07-historial-clinico:1.0.0}
     ports:
-      - "${PORT:-8080}:8080"
+      - "127.0.0.1:${PORT:-8080}:8080"
+    environment:
+      SPRING_H2_CONSOLE_ENABLED: ${SPRING_H2_CONSOLE_ENABLED:-true}
+    cpus: 1.0
+    mem_limit: 512m
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8080/api/expedientes"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 20s
