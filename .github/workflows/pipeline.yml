@@ -1,0 +1,131 @@
+name: EP2 CI/CD
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop, main]
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Pruebas y cobertura
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - run: mvn -B verify
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pruebas-${{ github.sha }}
+          path: |
+            target/surefire-reports/
+            target/site/jacoco/
+
+  security:
+    name: Seguridad Snyk
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: snyk/actions/setup@master
+      - name: Analizar código y dependencias Maven
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: |
+          if [[ -z "$SNYK_TOKEN" ]]; then
+            echo '::error::Falta configurar el secreto SNYK_TOKEN para este evento.'
+            exit 1
+          fi
+          snyk code test --severity-threshold=high
+          snyk test --file=pom.xml --severity-threshold=high
+
+  image:
+    name: Imagen Docker
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      APP_IMAGE: historial-clinico-svc:${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Construir imagen
+        run: |
+          docker build --label "org.opencontainers.image.revision=$GITHUB_SHA" -t "$APP_IMAGE" .
+          docker image inspect "$APP_IMAGE" --format '{{.Id}} {{.Size}} {{.Config.User}}' | tee imagen.txt
+      - name: Exportar imagen para despliegue
+        if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+        run: docker save "$APP_IMAGE" | gzip > imagen.tar.gz
+      - uses: actions/upload-artifact@v4
+        if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+        with:
+          name: imagen-${{ github.sha }}
+          path: imagen.tar.gz
+          retention-days: 3
+
+  promotion:
+    name: Autorización de promoción
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [security, image]
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Imagen autorizada para el despliegue de main"
+
+  deploy:
+    name: Despliegue simulado
+    if: ${{ !cancelled() && needs.image.result == 'success' && (github.event_name == 'pull_request' || needs.promotion.result == 'success') }}
+    needs: [image, promotion]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      APP_IMAGE: historial-clinico-svc:${{ github.sha }}
+      SPRING_H2_CONSOLE_ENABLED: 'false'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: imagen-${{ github.sha }}
+      - name: Desplegar y verificar la imagen del commit
+        run: |
+          docker load --input imagen.tar.gz
+          revision=$(docker image inspect "$APP_IMAGE" --format '{{index .Config.Labels "org.opencontainers.image.revision"}}')
+          test "$revision" = "$GITHUB_SHA"
+          docker compose up -d --no-build --pull never --wait --wait-timeout 120
+          docker compose exec -T historial-clinico-svc id -u | grep -qx 10001
+          curl --fail --silent --show-error http://localhost:8080/api/expedientes | tee respuesta.json
+          jq -e 'type == "array"' respuesta.json
+          printf 'Commit: %s\nImagen: %s\nEjecución: %s\n' "$GITHUB_SHA" "$APP_IMAGE" "$GITHUB_RUN_ID" > despliegue.txt
+          docker image inspect "$APP_IMAGE" --format '{{.Id}}' >> despliegue.txt
+      - name: Capturar registros y apagar entorno
+        if: always()
+        run: |
+          docker compose ps -a > compose-estado.txt
+          docker compose logs --no-color > compose.log 2>&1
+          docker compose down --remove-orphans
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: despliegue-${{ github.sha }}
+          path: |
+            compose-estado.txt
+            compose.log
+            respuesta.json
+            despliegue.txt
