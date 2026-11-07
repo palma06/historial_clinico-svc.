@@ -69,20 +69,28 @@ jobs:
         run: |
           docker build --label "org.opencontainers.image.revision=$GITHUB_SHA" -t "$APP_IMAGE" .
           docker image inspect "$APP_IMAGE" --format '{{.Id}} {{.Size}} {{.Config.User}}' | tee imagen.txt
-      - name: Exportar imagen aprobable para despliegue
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      - name: Exportar imagen para despliegue
+        if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
         run: docker save "$APP_IMAGE" | gzip > imagen.tar.gz
       - uses: actions/upload-artifact@v4
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
         with:
           name: imagen-${{ github.sha }}
           path: imagen.tar.gz
           retention-days: 3
 
-  deploy:
-    name: Despliegue simulado
+  promotion:
+    name: Autorización de promoción
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: [security, image]
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Imagen autorizada para el despliegue de main"
+
+  deploy:
+    name: Despliegue simulado
+    if: ${{ !cancelled() && needs.image.result == 'success' && (github.event_name == 'pull_request' || needs.promotion.result == 'success') }}
+    needs: [image, promotion]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
